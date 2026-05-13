@@ -1,0 +1,27 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+
+ColumnLimit: 100
+
+BreakBeforeBraces: Attach
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Empty
+
+PointerAlignment: Left
+
+SortIncludes: true
+IncludeBlocks: Regroup
+
+SpaceBeforeParens: ControlStatements
+SpacesInParentheses: false
+SpacesInSquareBrackets: false
+
+BinPackArguments: false
+BinPackParameters: false
+
+AlignAfterOpenBracket: BlockIndent
+
+InsertTrailingCommas: Wrapped
