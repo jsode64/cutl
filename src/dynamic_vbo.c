@@ -31,6 +31,8 @@ CuResult cuCreateDynamicVbo(
     const VkDevice device = renderer->_context->_device;
     CuResult result = CU_SUCCESS;
 
+    *vbo = CU_NULL_DYNAMIC_VBO;
+
     // Get the memory requirements.
     const uint64_t bufferSize = size * renderer->_nFrames;
     const VkBufferCreateInfo createInfo = {

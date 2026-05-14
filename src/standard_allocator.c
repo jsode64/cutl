@@ -15,6 +15,8 @@ CuResult cuStandardAllocatorAllocationCallback(
     const CuContext* context = (const CuContext*)self;
     VkResult result = VK_SUCCESS;
 
+    *allocation = CU_NULL_ALLOCATION;
+
     // Find the memory type index.
     uint32_t memoryTypeIndex = 0;
     const bool memoryTypeFound = cuFindMemoryType(

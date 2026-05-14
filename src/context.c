@@ -2,6 +2,7 @@
 
 #include "info.h"
 #include "memory.h"
+#include "util.h"
 #include "window.h"
 
 #define GLFW_INCLUDE_VULKAN
@@ -185,6 +186,7 @@ int64_t cuDefaultJudgePhysicalDevice(
 CuResult cuCreateContext(CuContext* context, const CuContextCreateInfo* info) {
     VkResult result = VK_SUCCESS;
 
+    *context = CU_NULL_CONTEXT;
     context->_window = info->window;
 
     result = cuCreateInstance(context, info);
@@ -227,11 +229,16 @@ FAIL:
 }
 
 void cuDestroyContext(CuContext* context) {
-    vkDeviceWaitIdle(context->_device);
+    if (context->_device != VK_NULL_HANDLE) {
+        vkDeviceWaitIdle(context->_device);
 
-    vkDestroyCommandPool(context->_device, context->_commandPool, NULL);
-    vkDestroyDevice(context->_device, NULL);
-    vkDestroySurfaceKHR(context->_instance, context->_surface, NULL);
+        vkDestroyCommandPool(context->_device, context->_commandPool, NULL);
+        vkDestroyDevice(context->_device, NULL);
+    }
+
+    if (context->_instance != VK_NULL_HANDLE) {
+        vkDestroySurfaceKHR(context->_instance, context->_surface, NULL);
+    }
 
     if (context->_debugMessenger != VK_NULL_HANDLE) {
         PFN_vkDestroyDebugUtilsMessengerEXT debugMessengerDestroyFn =
@@ -293,12 +300,12 @@ VkResult cuCreateInstance(CuContext* context, const CuContextCreateInfo* info) {
         .applicationVersion = info->appVersion,
         .pEngineName = "Cuttle",
         .engineVersion = cuVersion,
-        .apiVersion = VK_API_VERSION_1_3,
+        .apiVersion = VK_API_VERSION_1_4,
     };
     const VkInstanceCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         .pNext = info->useValidation ? &debugMessengerCreateInfo : NULL,
-        .flags = 0,
+        .flags = onApple ? VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR : 0,
         .pApplicationInfo = &appInfo,
         .enabledLayerCount = (uint32_t)layers._n,
         .ppEnabledLayerNames = (const char**)layers._data,
@@ -338,8 +345,13 @@ CuChunk cuGetInstanceExtensions(const CuContextCreateInfo* info) {
         nExtensions += 1;
     }
     uint32_t nGlfwExtensions = 0;
-    glfwGetRequiredInstanceExtensions(&nGlfwExtensions);
-    nExtensions += (size_t)nGlfwExtensions;
+    if (onApple) {
+        nExtensions += 3;
+    } else {
+        uint32_t nGlfwExtensions = 0;
+        glfwGetRequiredInstanceExtensions(&nGlfwExtensions);
+        nExtensions += (size_t)nGlfwExtensions;
+    }
 
     if (nExtensions == 0) {
         return CU_CHUNK_NULL;
@@ -354,9 +366,15 @@ CuChunk cuGetInstanceExtensions(const CuContextCreateInfo* info) {
     if (info->useValidation) {
         extensions[i++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
     }
-    const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&nGlfwExtensions);
-    memcpy(extensions + i, glfwExtensions, nGlfwExtensions * sizeof(const char*));
-    i += nGlfwExtensions;
+    if (onApple) {
+        extensions[i++] = VK_KHR_SURFACE_EXTENSION_NAME;
+        extensions[i++] = "VK_EXT_metal_surface";
+        extensions[i++] = VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
+    } else {
+        const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&nGlfwExtensions);
+        memcpy(extensions + i, glfwExtensions, nGlfwExtensions * sizeof(const char*));
+        i += (size_t)nGlfwExtensions;
+    }
 
     return (CuChunk){
         ._n = i,
@@ -596,7 +614,8 @@ VkResult cuCreateDevice(CuContext* context) {
             .pQueuePriorities = &queuePriority,
         }
     };
-    const char* extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    const char* extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, "VK_KHR_portability_subset"};
+    const uint32_t nExtensions = onApple ? 2 : 1;
     const VkPhysicalDeviceVulkan14Features features14 = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES,
         .pNext = NULL,
@@ -639,7 +658,7 @@ VkResult cuCreateDevice(CuContext* context) {
         .pQueueCreateInfos = queueCreateInfos,
         .enabledLayerCount = 0,
         .ppEnabledLayerNames = NULL,
-        .enabledExtensionCount = sizeof(extensions) / sizeof(extensions[0]),
+        .enabledExtensionCount = nExtensions,
         .ppEnabledExtensionNames = extensions,
     };
 

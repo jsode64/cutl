@@ -63,6 +63,7 @@ CuResult
 cuCreateRenderer(CuRenderer* renderer, const CuContext* context, const CuRendererCreateInfo* info) {
     VkResult result = VK_SUCCESS;
 
+    *renderer = CU_NULL_RENDERER;
     renderer->_context = context;
 
     CuSwapchainInfo swapchainInfo = {};

@@ -42,6 +42,7 @@ CuResult cuCreatePipelineLayout(
     const CuContext* context,
     const CuPipelineLayoutCreateInfo* info
 ) {
+    *pipelineLayout = CU_NULL_PIPELINE_LAYOUT;
     pipelineLayout->_context = context;
 
     const VkPushConstantRange pushConstantRange = {
@@ -83,6 +84,8 @@ void cuDestroyPipelineLayout(CuPipelineLayout* pipelineLayout) {
 }
 
 CuResult cuReadShaderCode(CuShaderCode* shaderCode, const char* path) {
+    *shaderCode = CU_NULL_SHADER_CODE;
+
     FILE* file = fopen(path, "r");
     if (file == NULL) {
         goto FAIL;
@@ -139,6 +142,7 @@ CuResult cuCreatePipeline(
     const CuShaderCode* fragmentCode,
     const CuPipelineCreateInfo* info
 ) {
+    *pipeline = CU_NULL_PIPELINE;
     pipeline->_context = context;
 
     const char* shaderMainFnName = "main";

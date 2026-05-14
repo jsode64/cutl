@@ -37,3 +37,9 @@
         .tag = CU_TAG_VK_ERROR,                                                                    \
         .val = (int32_t)result,                                                                    \
     })
+
+#if defined(__APPLE__)
+static const bool onApple = true;
+#else
+static const bool onApple = false;
+#endif
