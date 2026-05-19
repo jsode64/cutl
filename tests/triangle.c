@@ -1,21 +1,17 @@
-#include "context.h"
-#include "pipeline.h"
-#include "renderer.h"
-#include "result.h"
-#include "scene.h"
+#define CU_INCLUDE_MATH
+#include "cutl.h"
 #include "util.h"
-#include "window.h"
 
 #include <stdint.h>
 #include <stdio.h>
 
 int32_t main() {
     CuWindow window;
-    CU_QUERY(cuCreateWindow(&window, "Hello", 1600, 900));
+    CU_QUERY(cuCreateWindow(&window, "Triangle Test", 800, 800));
 
     const CuContextCreateInfo contextCreateInfo = {
-        .useValidation = true,
         .window = &window,
+        .useValidation = true,
     };
     CuContext context;
     CU_QUERY(cuCreateContext(&context, &contextCreateInfo));

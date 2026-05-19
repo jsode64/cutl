@@ -1,12 +1,12 @@
 #include "context.h"
 
 #include "info.h"
-#include "memory.h"
 #include "util.h"
 #include "window.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -32,30 +32,33 @@
     })
 
 /**
- * Creates   instance.
+ * Creates the context's instance.
  *
+ * @param context The context whose intance to create.
  * @param info The context create info.
- * @param instance The instance to create.
  *
- * @return The result of any failed Vulkan operation, or `VK_SUCCESS` on success.
+ * @return `VK_SUCCESS` on success, or the encountered error on failure.
  */
 static VkResult cuCreateInstance(CuContext* context, const CuContextCreateInfo* info);
 
 /**
- * Returns the required extensions in a chunk.
- *
  * @param info The context create info.
  *
- * @return A chunk of extension names.
+ * @return A chunk of the instance extension names.
  */
 static CuChunk cuGetInstanceExtensions(const CuContextCreateInfo* info);
 
 /**
- * Returns the required layers in a chunk.
+ * @param useSurfaceExtensions Whether surface extensions are required.
  *
+ * @return The system's required instance extensions.
+ */
+static CuChunk cuGetSystemInstanceExtensions(bool useSurfaceExtensions);
+
+/**
  * @param info The context create info.
  *
- * @return A chunk of layer names.
+ * @return A chunk of the instance layer names.
  */
 static CuChunk cuGetInstanceLayers(const CuContextCreateInfo* info);
 
@@ -75,7 +78,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL cuVkDebugCallback(
  * @param context The context to create the instance for.
  * @param window The window to make the surface from.
  *
- * @return The result of `glfwCreateSurfaceKHR`.
+ * @return `VK_SUCCESS` on success, or the encountered error on failure.
  *
  * @note If the passed window is null, `VK_SUCCESS` will be returned without creating the surface.
  */
@@ -88,7 +91,7 @@ static VkResult cuCreateSurface(CuContext* context, const CuWindow* window);
  * @param context The context to choose a physical device and get the queue family indices for.
  * @param info The context create info.
  *
- * @return The result of any failed Vulkan operation, or `VK_SUCCESS` on success.
+ * @return `VK_SUCCESS` on success, or the encountered error on failure.
  */
 static VkResult cuChoosePhysicalDevice(CuContext* context, const CuContextCreateInfo* info);
 
@@ -101,7 +104,7 @@ static VkResult cuChoosePhysicalDevice(CuContext* context, const CuContextCreate
  * @param presentQueueIndex The index to be set to the first present family's.
  * @param wereBothFound The booloean to be set to whether both queue indices were defined.
  *
- * @return The result of any failed Vulkan operation, or `VK_SUCCESS` on success.
+ * @return `VK_SUCCESS` on success, or the encountered error on failure.
  */
 static VkResult cuQueryPhysicalDeviceQueueFamilies(
     const CuContext* context,
@@ -115,10 +118,18 @@ static VkResult cuQueryPhysicalDeviceQueueFamilies(
  * Creates the context's device.
  *
  * @param context The context whose device to create.
+ * @param info The context's create info.
  *
- * @return The result of `vkCreateDevice`.
+ * @return `VK_SUCCESS` on success, or the encountered error on failure.
  */
-static VkResult cuCreateDevice(CuContext* context);
+static VkResult cuCreateDevice(CuContext* context, const CuContextCreateInfo* const info);
+
+/**
+ * @param info The context create info.
+ *
+ * @return A chunk of the device extension names.
+ */
+static CuChunk cuGetDeviceExtensions(const CuContextCreateInfo* info);
 
 /**
  * Gets the context's device queues (main and present).
@@ -137,10 +148,10 @@ static void cuGetDeviceQueues(CuContext* context);
 static VkResult cuCreateCommandPool(CuContext* context);
 
 int64_t cuDefaultJudgePhysicalDevice(
-    size_t nExtensions,
-    const VkExtensionProperties* extensions,
-    const VkPhysicalDeviceFeatures2* features,
-    const VkPhysicalDeviceProperties2* properties
+    const size_t nExtensions,
+    const VkExtensionProperties* const extensions,
+    const VkPhysicalDeviceFeatures2* const features,
+    const VkPhysicalDeviceProperties2* const properties
 ) {
     // Query swapchain support.
     bool isSwapchainExtensionPresent = false;
@@ -156,20 +167,19 @@ int64_t cuDefaultJudgePhysicalDevice(
 
     // Query feature support.
     const VkPhysicalDeviceVulkan11Features* features11 =
-        (VkPhysicalDeviceVulkan11Features*)features->pNext;
+        (VkPhysicalDeviceVulkan11Features* const)features->pNext;
     const VkPhysicalDeviceVulkan12Features* features12 =
-        (VkPhysicalDeviceVulkan12Features*)features11->pNext;
+        (VkPhysicalDeviceVulkan12Features* const)features11->pNext;
     const VkPhysicalDeviceVulkan13Features* features13 =
-        (VkPhysicalDeviceVulkan13Features*)features12->pNext;
+        (VkPhysicalDeviceVulkan13Features* const)features12->pNext;
     const VkPhysicalDeviceVulkan14Features* features14 =
-        (VkPhysicalDeviceVulkan14Features*)features13->pNext;
-    const bool areAllFeaturesSupported =
-        features->features.fillModeNonSolid && features->features.shaderInt64 == VK_TRUE && features12->descriptorIndexing == VK_TRUE &&
-        features12->scalarBlockLayout == VK_TRUE&&features12->timelineSemaphore == VK_TRUE&&
-        features12->bufferDeviceAddress==VK_TRUE&&
-        features13->synchronization2 == VK_TRUE && features13->dynamicRendering == VK_TRUE &&
-        features13->maintenance4 == VK_TRUE && features14->maintenance5 &&
-        features14->pushDescriptor == VK_TRUE;
+        (VkPhysicalDeviceVulkan14Features* const)features13->pNext;
+    const bool areAllFeaturesSupported = features->features.fillModeNonSolid &&
+        features->features.shaderInt64 == VK_TRUE && features12->descriptorIndexing == VK_TRUE &&
+        features12->scalarBlockLayout == VK_TRUE && features12->timelineSemaphore == VK_TRUE &&
+        features12->bufferDeviceAddress == VK_TRUE && features13->synchronization2 == VK_TRUE &&
+        features13->dynamicRendering == VK_TRUE && features13->maintenance4 == VK_TRUE &&
+        features14->maintenance5 && features14->pushDescriptor == VK_TRUE;
     if (!areAllFeaturesSupported) {
         return INT64_MIN;
     }
@@ -183,7 +193,7 @@ int64_t cuDefaultJudgePhysicalDevice(
     return score;
 }
 
-CuResult cuCreateContext(CuContext* context, const CuContextCreateInfo* info) {
+CuResult cuCreateContext(CuContext* const context, const CuContextCreateInfo* const info) {
     VkResult result = VK_SUCCESS;
 
     *context = CU_NULL_CONTEXT;
@@ -206,7 +216,7 @@ CuResult cuCreateContext(CuContext* context, const CuContextCreateInfo* info) {
 
     vkGetPhysicalDeviceMemoryProperties(context->_physicalDevice, &context->_memoryProperties);
 
-    result = cuCreateDevice(context);
+    result = cuCreateDevice(context, info);
     if (result != VK_SUCCESS) {
         goto FAIL;
     }
@@ -228,7 +238,7 @@ FAIL:
     };
 }
 
-void cuDestroyContext(CuContext* context) {
+void cuDestroyContext(CuContext* const context) {
     if (context->_device != VK_NULL_HANDLE) {
         vkDeviceWaitIdle(context->_device);
 
@@ -242,8 +252,9 @@ void cuDestroyContext(CuContext* context) {
 
     if (context->_debugMessenger != VK_NULL_HANDLE) {
         PFN_vkDestroyDebugUtilsMessengerEXT debugMessengerDestroyFn =
-            (PFN_vkDestroyDebugUtilsMessengerEXT
-            )vkGetInstanceProcAddr(context->_instance, "vkDestroyDebugUtilsMessengerEXT");
+            (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+                context->_instance, "vkDestroyDebugUtilsMessengerEXT"
+            );
         if (debugMessengerDestroyFn != NULL) {
             debugMessengerDestroyFn(context->_instance, context->_debugMessenger, NULL);
         }
@@ -255,10 +266,10 @@ void cuDestroyContext(CuContext* context) {
 }
 
 bool cuFindMemoryType(
-    const VkPhysicalDeviceMemoryProperties* memoryProperties,
-    uint32_t filter,
-    VkMemoryPropertyFlags properties,
-    uint32_t* memoryTypeIndex
+    const VkPhysicalDeviceMemoryProperties* const memoryProperties,
+    const uint32_t filter,
+    const VkMemoryPropertyFlags properties,
+    uint32_t* const memoryTypeIndex
 ) {
     for (uint32_t i = 0; i < memoryProperties->memoryTypeCount; i++) {
         const VkMemoryType* memoryType = &memoryProperties->memoryTypes[i];
@@ -273,7 +284,7 @@ bool cuFindMemoryType(
     return false;
 }
 
-VkResult cuCreateInstance(CuContext* context, const CuContextCreateInfo* info) {
+VkResult cuCreateInstance(CuContext* const context, const CuContextCreateInfo* const info) {
     CuChunk CU_CHUNK_AUTO_FREE extensions = cuGetInstanceExtensions(info);
     CuChunk CU_CHUNK_AUTO_FREE layers = cuGetInstanceLayers(info);
     const uint32_t cuVersion =
@@ -298,19 +309,21 @@ VkResult cuCreateInstance(CuContext* context, const CuContextCreateInfo* info) {
         .pNext = NULL,
         .pApplicationName = info->appName,
         .applicationVersion = info->appVersion,
-        .pEngineName = "Cuttle",
+        .pEngineName = "Cutl",
         .engineVersion = cuVersion,
         .apiVersion = VK_API_VERSION_1_4,
     };
+    const VkInstanceCreateFlagBits flags =
+        CU_ON_APPLE ? VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR : 0;
     const VkInstanceCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         .pNext = info->useValidation ? &debugMessengerCreateInfo : NULL,
-        .flags = onApple ? VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR : 0,
+        .flags = flags,
         .pApplicationInfo = &appInfo,
-        .enabledLayerCount = (uint32_t)layers._n,
-        .ppEnabledLayerNames = (const char**)layers._data,
-        .enabledExtensionCount = (uint32_t)extensions._n,
-        .ppEnabledExtensionNames = (const char**)extensions._data,
+        .enabledLayerCount = (uint32_t)layers.n,
+        .ppEnabledLayerNames = (const char**)layers.data,
+        .enabledExtensionCount = (uint32_t)extensions.n,
+        .ppEnabledExtensionNames = (const char**)extensions.data,
     };
 
     // Create the instance and debug messenger if debugging.
@@ -321,8 +334,9 @@ VkResult cuCreateInstance(CuContext* context, const CuContextCreateInfo* info) {
     }
     if (info->useValidation) {
         PFN_vkCreateDebugUtilsMessengerEXT debugMessengerCreateFn =
-            (PFN_vkCreateDebugUtilsMessengerEXT
-            )vkGetInstanceProcAddr(context->_instance, "vkCreateDebugUtilsMessengerEXT");
+            (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
+                context->_instance, "vkCreateDebugUtilsMessengerEXT"
+            );
         if (debugMessengerCreateFn == NULL) {
             return VK_ERROR_EXTENSION_NOT_PRESENT;
         } else {
@@ -338,79 +352,99 @@ VkResult cuCreateInstance(CuContext* context, const CuContextCreateInfo* info) {
     return VK_SUCCESS;
 }
 
-CuChunk cuGetInstanceExtensions(const CuContextCreateInfo* info) {
-    // Get the number of extensions.
+CuChunk cuGetInstanceExtensions(const CuContextCreateInfo* const info) {
+    CuChunk systemExtensions CU_CHUNK_AUTO_FREE =
+        cuGetSystemInstanceExtensions(info->window != NULL);
+
     size_t nExtensions = 0;
+    nExtensions += systemExtensions.n;
+    nExtensions += info->nInstanceExtensions;
     if (info->useValidation) {
         nExtensions += 1;
     }
-    uint32_t nGlfwExtensions = 0;
-    if (onApple) {
-        nExtensions += 3;
-    } else {
-        uint32_t nGlfwExtensions = 0;
-        glfwGetRequiredInstanceExtensions(&nGlfwExtensions);
-        nExtensions += (size_t)nGlfwExtensions;
-    }
 
-    if (nExtensions == 0) {
-        return CU_CHUNK_NULL;
-    }
-
-    // Store extensions.
-    const char** extensions = malloc(nExtensions * sizeof(const char*));
+    const char** const extensions = (const char**)malloc(nExtensions * sizeof(const char*));
     if (extensions == NULL) {
-        return CU_CHUNK_NULL;
+        return CU_NULL_CHUNK;
     }
+
     size_t i = 0;
+    memcpy(extensions + i, systemExtensions.data, systemExtensions.n * sizeof(const char*));
+    i += systemExtensions.n;
+    memcpy(
+        extensions + i, info->instanceExtensions, info->nInstanceExtensions * sizeof(const char*)
+    );
+    i += info->nInstanceExtensions;
     if (info->useValidation) {
         extensions[i++] = VK_EXT_DEBUG_UTILS_EXTENSION_NAME;
     }
-    if (onApple) {
-        extensions[i++] = VK_KHR_SURFACE_EXTENSION_NAME;
-        extensions[i++] = "VK_EXT_metal_surface";
-        extensions[i++] = VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME;
-    } else {
-        const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&nGlfwExtensions);
-        memcpy(extensions + i, glfwExtensions, nGlfwExtensions * sizeof(const char*));
-        i += (size_t)nGlfwExtensions;
-    }
 
     return (CuChunk){
-        ._n = i,
-        ._data = extensions,
+        .n = i,
+        .data = extensions,
     };
 }
 
-static CuChunk cuGetInstanceLayers(const CuContextCreateInfo* info) {
-    // Get the number of layers.
+CuChunk cuGetSystemInstanceExtensions(const bool useSurfaceExtensions) {
+#if CU_ON_APPLE
+    const char* extensions[] = {
+        VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME,
+        VK_KHR_SURFACE_EXTENSION_NAME, // Surface extensions:
+        "VK_EXT_metal_surface",
+    };
+    const uint32_t nExtensions =
+        useSurfaceExtensions ? sizeof(extensions) / sizeof(extensions[0]) : 1;
+    return CU_CHUNK_FROM_ARRAY(nExtensions, extensions);
+#elif CU_ON_LINUX
+    const char* extensions[] = {
+        VK_KHR_SURFACE_EXTENSION_NAME, // Surface extensions:
+        "VK_KHR_xcb_surface",
+    };
+    const uint32_t nExtensions = sizeof(extensions) / sizeof(extensions[0]);
+    return CU_CHUNK_FROM_ARRAY(nExtensions, extensions);
+#elif CU_ON_WINDOWS
+    const char* extensions[] = {
+        VK_KHR_SURFACE_EXTENSION_NAME, // Surface extensions:
+        "VK_KHR_win32_surface",
+    };
+    const uint32_t nExtensions = sizeof(extensions) / sizeof(extensions[0]);
+    return CU_CHUNK_FROM_ARRAY(nExtensions, extensions);
+#else
+    return CU_NULL_CHUNK;
+#endif
+}
+
+static CuChunk cuGetInstanceLayers(const CuContextCreateInfo* const info) {
     size_t nLayers = 0;
+    nLayers += info->nInstanceExtensions;
     if (info->useValidation) {
         nLayers += 1;
     }
 
-    if (nLayers == 0) {
-        return CU_CHUNK_NULL;
+    const char** const layers = (const char**)malloc(nLayers * sizeof(const char*));
+    if (layers == NULL) {
+        return CU_NULL_CHUNK;
     }
 
-    // Store layers.
-    const char** layers = malloc(nLayers * sizeof(const char*));
-    if (layers == NULL) {
-        return CU_CHUNK_NULL;
-    }
     size_t i = 0;
+    memcpy(layers + i, info->instanceLayers, info->nInstanceLayers * sizeof(const char*));
+    i += info->nInstanceExtensions;
     if (info->useValidation) {
         layers[i++] = "VK_LAYER_KHRONOS_validation";
     }
 
     return (CuChunk){
-        ._n = i,
-        ._data = layers,
+        .n = i,
+        .data = layers,
     };
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL
-cuVkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT* callbackData, void*) {
+VKAPI_ATTR VkBool32 VKAPI_CALL cuVkDebugCallback(
+    const VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+    const VkDebugUtilsMessageTypeFlagsEXT,
+    const VkDebugUtilsMessengerCallbackDataEXT* const callbackData,
+    void* const
+) {
     if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
         fprintf(stderr, "\n%s\n", callbackData->pMessage);
     }
@@ -418,7 +452,7 @@ cuVkDebugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebu
     return VK_FALSE;
 }
 
-VkResult cuCreateSurface(CuContext* context, const CuWindow* window) {
+VkResult cuCreateSurface(CuContext* const context, const CuWindow* const window) {
     if (window == NULL) {
         return VK_SUCCESS;
     }
@@ -428,7 +462,7 @@ VkResult cuCreateSurface(CuContext* context, const CuWindow* window) {
     return result;
 }
 
-VkResult cuChoosePhysicalDevice(CuContext* context, const CuContextCreateInfo* info) {
+VkResult cuChoosePhysicalDevice(CuContext* const context, const CuContextCreateInfo* const info) {
     VkResult result;
 
     // Get the physical devices.
@@ -445,8 +479,8 @@ VkResult cuChoosePhysicalDevice(CuContext* context, const CuContextCreateInfo* i
 
     // Enumerate and choose the best physical device.
     CuPhysicalDeviceJudgeFn judgeFn = info->physicalDeviceJudgeFn != NULL
-                                          ? info->physicalDeviceJudgeFn
-                                          : cuDefaultJudgePhysicalDevice;
+        ? info->physicalDeviceJudgeFn
+        : cuDefaultJudgePhysicalDevice;
     int64_t bestScore = INT64_MIN;
     VkPhysicalDevice bestPhysicalDevice = VK_NULL_HANDLE;
     uint32_t bestMainQueueIndex = 0;
@@ -546,11 +580,11 @@ VkResult cuChoosePhysicalDevice(CuContext* context, const CuContextCreateInfo* i
 }
 
 VkResult cuQueryPhysicalDeviceQueueFamilies(
-    const CuContext* context,
+    const CuContext* const context,
     const VkPhysicalDevice physicalDevice,
-    uint32_t* mainQueueIndex,
-    uint32_t* presentQueueIndex,
-    bool* wereBothFound
+    uint32_t* const mainQueueIndex,
+    uint32_t* const presentQueueIndex,
+    bool* const wereBothFound
 ) {
     // Get the queue family indices.
     uint32_t nQueueFamilies = 0;
@@ -590,12 +624,12 @@ VkResult cuQueryPhysicalDeviceQueueFamilies(
     return VK_SUCCESS;
 }
 
-VkResult cuCreateDevice(CuContext* context) {
+VkResult cuCreateDevice(CuContext* const context, const CuContextCreateInfo* const info) {
     const float queuePriority = 1.0f;
     const uint32_t nQueues = (context->_mainQueueIndex == context->_presentQueueIndex ||
                               context->_surface != VK_NULL_HANDLE)
-                                 ? 1
-                                 : 2;
+        ? 1
+        : 2;
     const VkDeviceQueueCreateInfo queueCreateInfos[] = {
         {
             .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
@@ -614,8 +648,6 @@ VkResult cuCreateDevice(CuContext* context) {
             .pQueuePriorities = &queuePriority,
         }
     };
-    const char* extensions[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME, "VK_KHR_portability_subset"};
-    const uint32_t nExtensions = onApple ? 2 : 1;
     const VkPhysicalDeviceVulkan14Features features14 = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES,
         .pNext = NULL,
@@ -644,12 +676,12 @@ VkResult cuCreateDevice(CuContext* context) {
     const VkPhysicalDeviceFeatures2 features = {
         .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
         .pNext = (void*)&features11,
-        .features =
-            {
-                .fillModeNonSolid = VK_TRUE,
-                .shaderInt64 = VK_TRUE,
-            },
+        .features = {
+            .fillModeNonSolid = VK_TRUE,
+            .shaderInt64 = VK_TRUE,
+        },
     };
+    const CuChunk extensions CU_CHUNK_AUTO_FREE = cuGetDeviceExtensions(info);
     const VkDeviceCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         .pNext = &features,
@@ -658,14 +690,41 @@ VkResult cuCreateDevice(CuContext* context) {
         .pQueueCreateInfos = queueCreateInfos,
         .enabledLayerCount = 0,
         .ppEnabledLayerNames = NULL,
-        .enabledExtensionCount = nExtensions,
-        .ppEnabledExtensionNames = extensions,
+        .enabledExtensionCount = extensions.n,
+        .ppEnabledExtensionNames = extensions.data,
     };
 
     return vkCreateDevice(context->_physicalDevice, &createInfo, NULL, &context->_device);
 }
 
-void cuGetDeviceQueues(CuContext* context) {
+CuChunk cuGetDeviceExtensions(const CuContextCreateInfo* const info) {
+    size_t nExtensions = 0;
+    nExtensions += 1;
+    nExtensions += info->nDeviceExtensions;
+    if (CU_ON_APPLE) {
+        nExtensions += 1;
+    }
+
+    const char** const extensions = (const char**)malloc(nExtensions * sizeof(const char*));
+    if (extensions == NULL) {
+        return CU_NULL_CHUNK;
+    }
+
+    size_t i = 0;
+    extensions[i++] = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+    memcpy(extensions + i, info->deviceExtensions, info->nDeviceExtensions * sizeof(const char*));
+    i += info->nDeviceExtensions;
+    if (CU_ON_APPLE) {
+        extensions[i++] = "VK_KHR_portability_subset";
+    }
+
+    return (CuChunk){
+        .n = i,
+        .data = extensions,
+    };
+}
+
+void cuGetDeviceQueues(CuContext* const context) {
     vkGetDeviceQueue(context->_device, context->_mainQueueIndex, 0, &context->_mainQueue);
 
     if (context->_window != NULL) {
@@ -675,7 +734,7 @@ void cuGetDeviceQueues(CuContext* context) {
     }
 }
 
-VkResult cuCreateCommandPool(CuContext* context) {
+VkResult cuCreateCommandPool(CuContext* const context) {
     const VkCommandPoolCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext = NULL,

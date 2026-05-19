@@ -15,6 +15,8 @@
     })
 
 CuResult cuCreateWindow(CuWindow* window, const char* title, uint32_t width, uint32_t height) {
+    *window = CU_NULL_WINDOW;
+
     // Initialize GLFW.
     if (glfwInit() != GLFW_TRUE) {
         goto FAIL;

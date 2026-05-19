@@ -12,8 +12,8 @@
 /**
  * An uninitialized dynamic vertex buffer.
  */
-#define CU_NULL_DYNAMIC_VBO                                                                        \
-    ((CuDynamicVbo){                                                                               \
+#define CU_NULL_DYN_BUF                                                                            \
+    ((CuDynBuf){                                                                                   \
         ._renderer = NULL,                                                                         \
         ._allocation = CU_NULL_ALLOCATION,                                                         \
         ._buffer = VK_NULL_HANDLE,                                                                 \
@@ -21,17 +21,17 @@
         ._address = 0,                                                                             \
     })
 
-CuResult cuCreateDynamicVbo(
+CuResult cuCreateDynBuf(
     const CuRenderer* renderer,
     uint64_t size,
     void* allocator,
     const CuAllocationCallbacks* allocationCallbacks,
-    CuDynamicVbo* vbo
+    CuDynBuf* buffer
 ) {
     const VkDevice device = renderer->_context->_device;
     CuResult result = CU_SUCCESS;
 
-    *vbo = CU_NULL_DYNAMIC_VBO;
+    *buffer = CU_NULL_DYN_BUF;
 
     // Get the memory requirements.
     const uint64_t bufferSize = size * renderer->_nFrames;
@@ -60,14 +60,14 @@ CuResult cuCreateDynamicVbo(
         &memoryRequirements.memoryRequirements,
         VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
         VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
-        &vbo->_allocation
+        &buffer->_allocation
     );
     if (result.tag != CU_TAG_SUCCESS) {
         goto FAIL;
     }
 
     // Create the buffer.
-    const VkResult createBufferResult = vkCreateBuffer(device, &createInfo, NULL, &vbo->_buffer);
+    const VkResult createBufferResult = vkCreateBuffer(device, &createInfo, NULL, &buffer->_buffer);
     if (createBufferResult != VK_SUCCESS) {
         result = CU_VK_RESULT(createBufferResult);
         goto FAIL;
@@ -75,7 +75,7 @@ CuResult cuCreateDynamicVbo(
 
     // Bind the buffer to the allocation.
     const VkResult bindBufferMemoryResult = vkBindBufferMemory(
-        device, vbo->_buffer, vbo->_allocation._memory, vbo->_allocation._offset
+        device, buffer->_buffer, buffer->_allocation._memory, buffer->_allocation._offset
     );
     if (bindBufferMemoryResult != VK_SUCCESS) {
         result = CU_VK_RESULT(bindBufferMemoryResult);
@@ -86,39 +86,39 @@ CuResult cuCreateDynamicVbo(
     const VkBufferDeviceAddressInfo addressInfo = {
         .sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO,
         .pNext = NULL,
-        .buffer = vbo->_buffer,
+        .buffer = buffer->_buffer,
     };
-    vbo->_address = vkGetBufferDeviceAddress(device, &addressInfo);
+    buffer->_address = vkGetBufferDeviceAddress(device, &addressInfo);
 
-    vbo->_renderer = renderer;
-    vbo->_size = size;
+    buffer->_renderer = renderer;
+    buffer->_size = size;
 
     return CU_SUCCESS;
 
 FAIL:
-    cuDestroyDynamicVbo(vbo, allocator, allocationCallbacks);
+    cuDestroyDynBuf(buffer, allocator, allocationCallbacks);
     return result;
 }
 
-void cuDestroyDynamicVbo(
-    CuDynamicVbo* vbo, void* allocator, const CuAllocationCallbacks* allocationCallbacks
+void cuDestroyDynBuf(
+    CuDynBuf* buffer, void* allocator, const CuAllocationCallbacks* allocationCallbacks
 ) {
-    allocationCallbacks->freeCallback(allocator, &vbo->_allocation);
-    vkDestroyBuffer(vbo->_renderer->_context->_device, vbo->_buffer, NULL);
+    allocationCallbacks->freeCallback(allocator, &buffer->_allocation);
+    vkDestroyBuffer(buffer->_renderer->_context->_device, buffer->_buffer, NULL);
 
-    *vbo = CU_NULL_DYNAMIC_VBO;
+    *buffer = CU_NULL_DYN_BUF;
 }
 
-CuResult cuDynamicVboWrite(CuDynamicVbo* vbo, const uint64_t size, const void* src) {
-    const VkDevice device = vbo->_renderer->_context->_device;
+CuResult cuDynBufWrite(CuDynBuf* buffer, const uint64_t size, const void* src) {
+    const VkDevice device = buffer->_renderer->_context->_device;
 
     // Get the mapped memory.
     uint8_t* dst;
-    const uint64_t offset = cuRendererFrameIndex(vbo->_renderer) * vbo->_size;
+    const uint64_t offset = cuRendererFrameIndex(buffer->_renderer) * buffer->_size;
     const VkResult mapMemoryResult = vkMapMemory(
         device,
-        vbo->_allocation._memory,
-        vbo->_allocation._offset + offset,
+        buffer->_allocation._memory,
+        buffer->_allocation._offset + offset,
         (VkDeviceSize)size,
         0,
         (void**)&dst
@@ -131,23 +131,23 @@ CuResult cuDynamicVboWrite(CuDynamicVbo* vbo, const uint64_t size, const void* s
     memcpy(dst, src, size);
 
     // Unmap the memory.
-    vkUnmapMemory(device, vbo->_allocation._memory);
+    vkUnmapMemory(device, buffer->_allocation._memory);
 
     return CU_SUCCESS;
 }
 
-CuResult cuDynamicVboWriteAll(CuDynamicVbo* vbo, uint64_t size, const void* src) {
-    const VkDevice device = vbo->_renderer->_context->_device;
-    const uint64_t nFrames = (uint64_t)vbo->_renderer->_nFrames;
+CuResult cuDynBufWriteAll(CuDynBuf* buffer, uint64_t size, const void* src) {
+    const VkDevice device = buffer->_renderer->_context->_device;
+    const uint64_t nFrames = (uint64_t)buffer->_renderer->_nFrames;
 
     // Get the mapped memory.
     uint8_t* dst;
-    const uint64_t offset = cuRendererFrameIndex(vbo->_renderer) * vbo->_size;
-    const uint64_t bufferSize = nFrames * vbo->_size;
+    const uint64_t offset = cuRendererFrameIndex(buffer->_renderer) * buffer->_size;
+    const uint64_t bufferSize = nFrames * buffer->_size;
     const VkResult mapMemoryResult = vkMapMemory(
         device,
-        vbo->_allocation._memory,
-        vbo->_allocation._offset + offset,
+        buffer->_allocation._memory,
+        buffer->_allocation._offset + offset,
         (VkDeviceSize)bufferSize,
         0,
         (void**)&dst
@@ -158,11 +158,11 @@ CuResult cuDynamicVboWriteAll(CuDynamicVbo* vbo, uint64_t size, const void* src)
 
     // Write the data.
     for (uint64_t i = 0; i < nFrames; i++) {
-        memcpy(dst + (i * vbo->_size), src, size);
+        memcpy(dst + (i * buffer->_size), src, size);
     }
 
     // Unmap the memory.
-    vkUnmapMemory(device, vbo->_allocation._memory);
+    vkUnmapMemory(device, buffer->_allocation._memory);
 
     return CU_SUCCESS;
 }

@@ -9,11 +9,18 @@
 #include <vulkan/vulkan.h>
 
 /**
- * A dynamic vertex buffer with data that is written every frame.
+ * @param pBuffer A pointer to the buffer to get the device address of.
+ *
+ * @return The buffer's device address.
+ */
+#define CU_BUFFER_DEVICE_ADDRESS(buffer) ((buffer)->_address)
+
+/**
+ * A dynamic buffer with data that is written every frame.
  *
  * Contains one frame for every frame in flight in a renderer.
  */
-typedef struct CuDynamicVbo {
+typedef struct CuDynBuf {
     const CuRenderer* _renderer; /**< The source renderer. */
 
     CuAllocation _allocation; /**< The memory allocation. */
@@ -23,69 +30,58 @@ typedef struct CuDynamicVbo {
     uint64_t _size; /**< The size of one of the buffer's frames in bytes. */
 
     VkDeviceAddress _address; /**< The buffer's device address. */
-} CuDynamicVbo;
+} CuDynBuf;
 
 /**
- * Creates the dynamic vertex buffer.
+ * Creates the dynamic buffer.
  *
  * @param renderer The target renderer.
  * @param size The size of one of the buffer's frames.
  * @param allocator The allocator to use.
  * @param allocationCallbacks The allocator's allocation callbacks.
- * @param vbo The dynamic vertex buffer to create.
+ * @param buffer The dynamic buffer to create.
  *
  * @return The result of the dynamic vertex buffer's creation.
  */
-CuResult cuCreateDynamicVbo(
+CuResult cuCreateDynBuf(
     const CuRenderer* renderer,
     uint64_t size,
     void* allocator,
     const CuAllocationCallbacks* allocationCallbacks,
-    CuDynamicVbo* vbo
+    CuDynBuf* buffer
 );
 
 /**
- * Destroys the dynamic vertex buffer.
+ * Destroys the dynamic buffer.
  *
- * @param vbo The dynamic vertex buffer to destroy.
- * @param allocator The source allocator..
+ * @param buffer The dynamic buffer to destroy.
+ * @param allocator The source allocator.
  * @param allocationCallbacks The allocator's allocation callbacks.
  */
-void cuDestroyDynamicVbo(
-    CuDynamicVbo* vbo, void* allocator, const CuAllocationCallbacks* allocationCallbacks
+void cuDestroyDynBuf(
+    CuDynBuf* buffer, void* allocator, const CuAllocationCallbacks* allocationCallbacks
 );
 
 /**
- * Writes the data to the dynamic vertex buffer.
+ * Writes the data to the dynamic buffer.
  *
- * @param vbo The dynamic vertex buffer to write to.
+ * @param buffer The dynamic buffer to write to.
  * @param size The size of the data to write.
  * @param data The data to write.
  *
  * @return The result of the data mapping and writing.
  */
-CuResult cuDynamicVboWrite(CuDynamicVbo* vbo, uint64_t size, const void* data);
+CuResult cuDynBufWrite(CuDynBuf* buffer, uint64_t size, const void* data);
 
 /**
- * Writes the data to all of the dynamic vertex buffer's frames.
- * 
- * @param vbo The dynamic vertex buffer to write to.
+ * Writes the data to all of the dynamic buffer's frames.
+ *
+ * @param buffer The dynamic buffer to write to.
  * @param size The size of the data to write.
  * @param data The data to write.
  *
  * @return The result of the data mapping and writing.
- * 
+ *
  * @note This function should *not* be used during active rendering due to race conditions.
  */
-CuResult cuDynamicVboWriteAll(CuDynamicVbo* vbo, uint64_t size, const void* data);
-
-/**
- * Returns the dynamic vertex buffer's device address.
- * 
- * @param vbo The dynamic vertex buffer to get the device address of.
- * 
- * @return The dynamic vertex buffer's device address.
- */
-static inline VkDeviceAddress cuDynamicVboDeviceAddress(const CuDynamicVbo* vbo) {
-    return vbo->_address;
-}
+CuResult cuDynBufWriteAll(CuDynBuf* buffer, uint64_t size, const void* data);

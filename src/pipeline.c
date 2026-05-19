@@ -4,6 +4,7 @@
 #include "result.h"
 
 #include <errno.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -210,11 +211,10 @@ CuResult cuCreatePipeline(
                 .x = 0,
                 .y = 0,
             },
-        .extent =
-            {
-                .width = 0,
-                .height = 0,
-            },
+        .extent = {
+            .width = 0,
+            .height = 0,
+        },
     };
     const VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
@@ -265,9 +265,8 @@ CuResult cuCreatePipeline(
         .minDepthBounds = 0.0f,
         .maxDepthBounds = 1.0f,
     };
-    const VkColorComponentFlags colorWriteMask =
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-        VK_COLOR_COMPONENT_A_BIT;
+    const VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
+        VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
         .blendEnable = VK_TRUE,
         .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,

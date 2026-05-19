@@ -1,10 +1,12 @@
 #include "renderer.h"
 
 #include "context.h"
-#include "memory.h"
 #include "scene.h"
 #include "swapchain.h"
+#include "util.h"
 
+#include <stdbool.h>
+#include <stdlib.h>
 #include <vulkan/vulkan.h>
 
 /**
@@ -28,7 +30,7 @@
 /**
  * The longest a stall will wait before timing out.
  */
-#define CU_TIMEOUT_NANOS 1'000'000'000
+#define CU_TIMEOUT_NANOS 1000000000
 
 /**
  * Retreives the swapchain images and crates their views, all stored in an array.
@@ -36,7 +38,7 @@
  * @param renderer The renderer whose swapchain images to create.
  * @param format The swapchain image format.
  *
- * @return The result of the operation.
+ * @return `VK_SUCCESS` on success, or the encountered error on failure.
  */
 static VkResult cuCreateSwapchainImages(CuRenderer* renderer, VkFormat format);
 
@@ -46,7 +48,7 @@ static VkResult cuCreateSwapchainImages(CuRenderer* renderer, VkFormat format);
  * @param renderer The renderer whose frame in flight objects to create.
  * @param nFrames The number of frames in flight to create.
  *
- * @return The result of any failed Vulkan operation, or `VK_SUCCESS` on success.
+ * @return `VK_SUCCESS` on success, or the encountered error on failure.
  */
 static VkResult cuCreateFrames(CuRenderer* renderer, uint32_t nFrames);
 
@@ -55,7 +57,7 @@ static VkResult cuCreateFrames(CuRenderer* renderer, uint32_t nFrames);
  *
  * @param renderer The renderer whose timeline semaphore to create.
  *
- * @return The result of `vkCreateSemaphore`.
+ * @return `VK_SUCCESS` on success, or the encountered error on failure.
  */
 static VkResult cuCreateTimelineSemaphore(CuRenderer* renderer);
 

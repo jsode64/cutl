@@ -1,8 +1,8 @@
 #include "allocation.h"
-
 #include "context.h"
 #include "result.h"
 
+#include <stdbool.h>
 #include <vulkan/vulkan.h>
 
 CuResult cuStandardAllocatorAllocationCallback(

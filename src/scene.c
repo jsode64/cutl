@@ -155,7 +155,7 @@ void cuSceneSetPushConstants(
         scene->_commandBuffer,
         pipelineLayout->_pipelineLayout,
         VK_SHADER_STAGE_ALL_GRAPHICS | VK_SHADER_STAGE_COMPUTE_BIT,
-        
+
         0,
         size,
         data

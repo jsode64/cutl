@@ -46,6 +46,9 @@ typedef struct CuContext {
  * @param properties The physical device's properties.
  *
  * @return The physical device's score or a negative number if it's unsuitable.
+ *
+ * @note The properties and features point to their next version variants. For example,
+ * `features->pNext` is the `VkPhysicalDeviceVulkan11Features` for the physical device.
  */
 typedef int64_t (*CuPhysicalDeviceJudgeFn)(
     size_t nExtensions,
@@ -79,16 +82,37 @@ int64_t cuDefaultJudgePhysicalDevice(
 );
 
 /**
- * Information for creating a Cuttle context.
+ * Information for creating a context.
+ *
+ * @note If `window` is not null, the surface extension and OS-specific surface extensions will be
+ * used automatically.
+ * @note On Apple, the `VK_KHR_portability_enumeration` extension will be used automatically.
+ * @note If `useValidation` is `true`, the `VK_EXT_debug_utils` extension and
+ * `VK_LAYER_KHRONOS_validation` layer will be used.
  */
 typedef struct CuContextCreateInfo {
     const CuWindow*
-        window; /**< The window target. If null, presentation will not be needed/initialized. */
+        window; /**< The window target. If null, presentation will not be initialized. */
 
     const char* appName; /**< The name of the application. Can be null. */
 
     uint32_t appVersion; /**< The version of the application made with `VK_MAKE_API_VERSION`. Can be
                             zero. */
+
+    uint32_t nInstanceLayers; /**< The number of instance layers to use. Can be zero. */
+
+    const char* instanceLayers; /**< The names of the instance layers to use. Can be null if
+                                   `nInstanceLayers` is zero. */
+
+    uint32_t nInstanceExtensions; /**< The number of instance extensions to use. Can be zero. */
+
+    const char* instanceExtensions; /**< The names of the instance extensions to use. Can be null is
+                                       `nInstanceExtensions` is zero. */
+
+    uint32_t nDeviceExtensions; /**< The number of device extensions to use. Can be zero. */
+
+    const char* deviceExtensions; /**< The names of the device extensions to use. Can be null if
+                                     `nDeviceExtensions` is zero. */
 
     CuPhysicalDeviceJudgeFn physicalDeviceJudgeFn; /**< The function for judging the physical
                                                       devices. Will use default if null. */
@@ -131,7 +155,7 @@ bool cuFindMemoryType(
 );
 
 /**
- * Waits for the context to idle.
+ * Waits for the context's device to idle.
  *
  * @param context The context to wait on.
  */

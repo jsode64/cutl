@@ -4,7 +4,7 @@
 #include "result.h"
 
 /**
- * A swapchain image and its image view.
+ * A swapchain image.
  */
 typedef struct CuSwpachainImage {
     VkImage _image; /**< The image. */
@@ -71,7 +71,7 @@ typedef struct CuRenderer {
  * @param context The source context for the renderer.
  * @param info The renderer create info.
  *
- * @return The result of the renderer creation.
+ * @return The result of the renderer's creation.
  */
 CuResult
 cuCreateRenderer(CuRenderer* renderer, const CuContext* context, const CuRendererCreateInfo* info);
@@ -89,7 +89,7 @@ void cuDestroyRenderer(CuRenderer* renderer);
  * @param renderer The renderer.
  * @param scene The scene to initialize.
  *
- * @return An error if encountered, or `CU_SUCCESS` on success.
+ * @return `CU_SUCCESS` on success, or the encountered error on failure.
  */
 CuResult cuRendererBeginScene(CuRenderer* renderer, CuScene* scene);
 
@@ -99,13 +99,11 @@ CuResult cuRendererBeginScene(CuRenderer* renderer, CuScene* scene);
  * @param renderer The renderer to submit the scene.
  * @param scene The scene to submit.
  *
- * @return An error if encountered, or `CU_SUCCESS` on success.
+ * @return `CU_SUCCESS` on success, or the encountered error on failure.
  */
 CuResult cuRendererSubmitScene(CuRenderer* renderer, CuScene* scene);
 
 /**
- * Returns the renderer's format.
- *
  * @param renderer The renderer to get the format of.
  *
  * @return The format of the renderer's swapchain images.
@@ -115,8 +113,6 @@ static inline VkFormat cuRendererFormat(const CuRenderer* renderer) {
 }
 
 /**
- * Returns the index of the renderer's current target frame.
- *
  * @param renderer The renderer to get the current frame index of.
  *
  * @return The index of the renderer's current target frame.

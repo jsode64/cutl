@@ -23,7 +23,7 @@ typedef struct CuSwapchainInfo {
  * @param swapchainInfo The swapchain info to be initialized.
  * @param context The context to get the swapchain information from.
  *
- * @return The result of any failed Vulkan operation or `VK_SUCCESS`.
+ * @return `VK_SUCCESS` on success, or the encountered error on failure.
  */
 VkResult cuGetSwapchainInfo(CuSwapchainInfo* swapchainInfo, const CuContext* context);
 
@@ -33,7 +33,7 @@ VkResult cuGetSwapchainInfo(CuSwapchainInfo* swapchainInfo, const CuContext* con
  * @param swapchain The swapchain to create.
  * @param context The context to create the swapchain from.
  *
- * @return The return value of `vkCreateSwapchainKHR`.
+ * @return `VK_SUCCESS` on success, or the encountered error on failure.
  */
 VkResult cuCreateSwapchain(
     VkSwapchainKHR* swapchain, const CuContext* context, const CuSwapchainInfo* swapchainInfo

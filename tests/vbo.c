@@ -1,11 +1,6 @@
-#include "buffer.h"
-#include "context.h"
-#include "pipeline.h"
-#include "renderer.h"
-#include "result.h"
-#include "scene.h"
+#define CU_INCLUDE_MATH
+#include "cutl.h"
 #include "util.h"
-#include "window.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -17,29 +12,19 @@
 /**
  * @return A vertex with the given position and color.
  */
-#define VERTEX(_x, _y, _r, _g, _b) ((Vertex){ .x = _x, .y = _y, .r = _r, .g = _g, .b = _b, .a = 1.0f })
+#define VERTEX(_x, _y, _r, _g, _b)                                                                 \
+    ((Vertex){                                                                                     \
+        {_x, _y},                                                                                  \
+        {_r, _g, _b, 1.0f},                                                                        \
+    })
 
 /**
  * A vertex for the VBO test shader.
  */
 typedef struct Vertex {
-    float x;
-    float y;
-    float r;
-    float g;
-    float b;
-    float a;
+    vec2f p;
+    vec4f c;
 } Vertex;
-
-/**
- * @return A random valid vertex.
- */
-Vertex randVertex();
-
-/**
- * @return A random float from -1 to 1 inclusive.
- */
-float randFloat();
 
 int32_t main() {
     Vertex vertices[] = {
@@ -66,11 +51,11 @@ int32_t main() {
     const uint32_t nVertices = sizeof(vertices) / sizeof(vertices[0]);
 
     CuWindow window;
-    CU_QUERY(cuCreateWindow(&window, "Hello", 1600, 900));
+    CU_QUERY(cuCreateWindow(&window, "VBO Test", 800, 800));
 
     const CuContextCreateInfo contextCreateInfo = {
-        .useValidation = true,
         .window = &window,
+        .useValidation = true,
     };
     CuContext context;
     CU_QUERY(cuCreateContext(&context, &contextCreateInfo));
@@ -86,12 +71,12 @@ int32_t main() {
     CU_QUERY(cuReadShaderCode(&vertexCode, "tests/shaders/vbo.vert.spv"));
     CU_QUERY(cuReadShaderCode(&fragmentCode, "tests/shaders/vbo.frag.spv"));
 
-    CuDynamicVbo dynamicVbo = {};
+    CuDynBuf vbo = {};
     const uint64_t vertexDataSize = sizeof(vertices);
-    CU_QUERY(cuCreateDynamicVbo(
-        &renderer, vertexDataSize, &context, &CU_STANDARD_ALLOCATOR_CALLBACKS, &dynamicVbo
-    ));
-    CU_QUERY(cuDynamicVboWriteAll(&dynamicVbo, vertexDataSize, vertices));
+    CU_QUERY(
+        cuCreateDynBuf(&renderer, vertexDataSize, &context, &CU_STANDARD_ALLOCATOR_CALLBACKS, &vbo)
+    );
+    CU_QUERY(cuDynBufWriteAll(&vbo, vertexDataSize, vertices));
 
     const CuPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
         .pushConstantSize = 8,
@@ -118,15 +103,14 @@ int32_t main() {
         cuUpdateWindow(&window);
 
         // Set the triangle tips' positions.
-        const double t = (double)clock() / (double)CLOCKS_PER_SEC;
+        const double t = 10.0 * (double)clock() / (double)CLOCKS_PER_SEC;
         const float x = (float)cos(t);
         const float y = (float)sin(t);
         for (uint32_t i = 2; i < nVertices; i += 3) {
             Vertex* const v = &vertices[i];
-            v->x = x;
-            v->y = y;
+            v->p = (vec2f){x, y};
         }
-        cuDynamicVboWrite(&dynamicVbo, sizeof(vertices), vertices);
+        cuDynBufWrite(&vbo, sizeof(vertices), vertices);
 
         CuScene scene = {};
         CU_QUERY(cuRendererBeginScene(&renderer, &scene));
@@ -134,7 +118,7 @@ int32_t main() {
         cuSceneBeginRender(&scene, &renderer);
         cuSceneBindPipeline(&scene, &pipeline);
 
-        VkDeviceAddress bufferAddress = cuDynamicVboDeviceAddress(&dynamicVbo);
+        VkDeviceAddress bufferAddress = CU_BUFFER_DEVICE_ADDRESS(&vbo);
         cuSceneSetPushConstants(&scene, &pipelineLayout, 8, &bufferAddress);
 
         cuSceneDraw(&scene, nVertices, 1);
@@ -145,7 +129,7 @@ int32_t main() {
 
     cuContextWaitIdle(&context);
 
-    cuDestroyDynamicVbo(&dynamicVbo, &context, &CU_STANDARD_ALLOCATOR_CALLBACKS);
+    cuDestroyDynBuf(&vbo, &context, &CU_STANDARD_ALLOCATOR_CALLBACKS);
     cuDestroyPipeline(&pipeline);
     cuDestroyPipelineLayout(&pipelineLayout);
     cuDestroyRenderer(&renderer);
@@ -153,19 +137,4 @@ int32_t main() {
     cuDestroyWindow(&window);
 
     return 0;
-}
-
-Vertex randVertex() {
-    return (Vertex){
-        .x = randFloat(),
-        .y = randFloat(),
-        .r = fabsf(randFloat()),
-        .g = fabsf(randFloat()),
-        .b = fabsf(randFloat()),
-        .a = 1.0f,
-    };
-}
-
-float randFloat() {
-    return (2.0f * (float)rand() / (float)RAND_MAX) - 1.0f;
 }

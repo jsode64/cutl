@@ -21,6 +21,8 @@ SpacesInSquareBrackets: false
 
 BinPackArguments: false
 BinPackParameters: false
+AlignOperands: DontAlign
+ContinuationIndentWidth: 4
 
 AlignAfterOpenBracket: BlockIndent
 

@@ -1,10 +1,10 @@
 #include "swapchain.h"
 
 #include "context.h"
-#include "memory.h"
 #include "util.h"
 #include "window.h"
 
+#include <stdbool.h>
 #include <vulkan/vulkan.h>
 
 /**
@@ -13,7 +13,7 @@
  * @param context The source context.
  * @param surfaceFormat The surface format to be set.
  *
- * @return The result of any failed Vulkan operation or `VK_SUCCESS`.
+ * @return `VK_SUCCESS` on success, or the encountered error on failure.
  */
 static VkResult cuChooseSurfaceFormat(VkSurfaceFormatKHR* surfaceFormat, const CuContext* context);
 
@@ -23,7 +23,7 @@ static VkResult cuChooseSurfaceFormat(VkSurfaceFormatKHR* surfaceFormat, const C
  * @param context The source context.
  * @param presentMode The present mode to be set.
  *
- * @return The result of any failed Vulkan operation or `VK_SUCCESS`.
+ * @return `VK_SUCCESS` on success, or the encountered error on failure.
  */
 static VkResult cuChoosePresentMode(VkPresentModeKHR* presentMode, const CuContext* context);
 
@@ -73,8 +73,8 @@ VkResult cuCreateSwapchain(
     VkSwapchainKHR* swapchain, const CuContext* context, const CuSwapchainInfo* swapchainInfo
 ) {
     const uint32_t maxImages = (swapchainInfo->capabilities.maxImageCount == 0)
-                                   ? UINT32_MAX
-                                   : swapchainInfo->capabilities.maxImageCount;
+        ? UINT32_MAX
+        : swapchainInfo->capabilities.maxImageCount;
     const uint32_t minImageCount = MIN(swapchainInfo->capabilities.minImageCount + 1, maxImages);
     const bool areQueueFamiliesExclusive =
         (context->_mainQueueIndex == context->_presentQueueIndex);
@@ -84,8 +84,8 @@ VkResult cuCreateSwapchain(
     };
     const VkCompositeAlphaFlagBitsKHR compositeAlpha =
         (swapchainInfo->capabilities.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR)
-            ? VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR
-            : VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+        ? VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR
+        : VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
     const VkSwapchainCreateInfoKHR createInfo = {
         .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
         .pNext = NULL,
