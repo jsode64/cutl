@@ -27,7 +27,7 @@ static VkResult cuChooseSurfaceFormat(VkSurfaceFormatKHR* surfaceFormat, const C
  */
 static VkResult cuChoosePresentMode(VkPresentModeKHR* presentMode, const CuContext* context);
 
-VkResult cuGetSwapchainInfo(CuSwapchainInfo* swapchainInfo, const CuContext* context) {
+VkResult cuGetSwapchainInfo(CuSwapchainInfo* const swapchainInfo, const CuContext* const context) {
     // Get the surface capabilities.
     VkSurfaceCapabilitiesKHR capabilities = {};
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
@@ -70,7 +70,9 @@ VkResult cuGetSwapchainInfo(CuSwapchainInfo* swapchainInfo, const CuContext* con
 }
 
 VkResult cuCreateSwapchain(
-    VkSwapchainKHR* swapchain, const CuContext* context, const CuSwapchainInfo* swapchainInfo
+    VkSwapchainKHR* const swapchain,
+    const CuContext* const context,
+    const CuSwapchainInfo* const swapchainInfo
 ) {
     const uint32_t maxImages = (swapchainInfo->capabilities.maxImageCount == 0)
         ? UINT32_MAX
@@ -111,7 +113,8 @@ VkResult cuCreateSwapchain(
     return vkCreateSwapchainKHR(context->_device, &createInfo, NULL, swapchain);
 }
 
-VkResult cuChooseSurfaceFormat(VkSurfaceFormatKHR* surfaceFormat, const CuContext* context) {
+VkResult
+cuChooseSurfaceFormat(VkSurfaceFormatKHR* const surfaceFormat, const CuContext* const context) {
     // Get the surface formats.
     VkResult result = VK_SUCCESS;
     uint32_t nSurfaceFormats = 0;
@@ -160,7 +163,7 @@ VkResult cuChooseSurfaceFormat(VkSurfaceFormatKHR* surfaceFormat, const CuContex
     return VK_SUCCESS;
 }
 
-VkResult cuChoosePresentMode(VkPresentModeKHR* presentMode, const CuContext* context) {
+VkResult cuChoosePresentMode(VkPresentModeKHR* const presentMode, const CuContext* const context) {
     // Get the present modes.
     VkResult result = VK_SUCCESS;
     uint32_t nPresentModes = 0;

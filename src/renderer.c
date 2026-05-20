@@ -61,8 +61,11 @@ static VkResult cuCreateFrames(CuRenderer* renderer, uint32_t nFrames);
  */
 static VkResult cuCreateTimelineSemaphore(CuRenderer* renderer);
 
-CuResult
-cuCreateRenderer(CuRenderer* renderer, const CuContext* context, const CuRendererCreateInfo* info) {
+CuResult cuCreateRenderer(
+    CuRenderer* const renderer,
+    const CuContext* const context,
+    const CuRendererCreateInfo* const info
+) {
     VkResult result = VK_SUCCESS;
 
     *renderer = CU_NULL_RENDERER;
@@ -104,13 +107,10 @@ cuCreateRenderer(CuRenderer* renderer, const CuContext* context, const CuRendere
 
 FAIL:
     cuDestroyRenderer(renderer);
-    return (CuResult){
-        .tag = CU_TAG_VK_ERROR,
-        .val = result,
-    };
+    return CU_VK_ERROR(result);
 }
 
-void cuDestroyRenderer(CuRenderer* renderer) {
+void cuDestroyRenderer(CuRenderer* const renderer) {
     const VkDevice device = renderer->_context->_device;
     vkDeviceWaitIdle(device);
 
@@ -143,7 +143,7 @@ void cuDestroyRenderer(CuRenderer* renderer) {
     *renderer = CU_NULL_RENDERER;
 }
 
-CuResult cuRendererBeginScene(CuRenderer* renderer, CuScene* scene) {
+CuResult cuRendererBeginScene(CuRenderer* const renderer, CuScene* const scene) {
     const VkDevice device = renderer->_context->_device;
     const CuFrame* frame = &renderer->_frames[renderer->_frameCounter % renderer->_nFrames];
     const VkCommandBuffer commandBuffer = frame->_commandBuffer;
@@ -195,13 +195,10 @@ CuResult cuRendererBeginScene(CuRenderer* renderer, CuScene* scene) {
     return CU_SUCCESS;
 
 FAIL:
-    return (CuResult){
-        .tag = CU_TAG_VK_ERROR,
-        .val = result,
-    };
+    return CU_VK_ERROR(result);
 }
 
-CuResult cuRendererSubmitScene(CuRenderer* renderer, CuScene* scene) {
+CuResult cuRendererSubmitScene(CuRenderer* const renderer, CuScene* const scene) {
     const VkCommandBuffer commandBuffer = scene->_commandBuffer;
     const CuFrame* frame = &renderer->_frames[renderer->_frameCounter % renderer->_nFrames];
     const CuSwapchainImage* swapchainImage = &renderer->_swapchainImages[renderer->_imageIndex];
@@ -282,13 +279,10 @@ CuResult cuRendererSubmitScene(CuRenderer* renderer, CuScene* scene) {
     return CU_SUCCESS;
 
 FAIL:
-    return (CuResult){
-        .tag = CU_TAG_VK_ERROR,
-        .val = result,
-    };
+    return CU_VK_ERROR(result);
 }
 
-VkResult cuCreateSwapchainImages(CuRenderer* renderer, VkFormat format) {
+VkResult cuCreateSwapchainImages(CuRenderer* const renderer, const VkFormat format) {
     const VkDevice device = renderer->_context->_device;
     VkResult result = VK_SUCCESS;
 
@@ -370,7 +364,7 @@ VkResult cuCreateSwapchainImages(CuRenderer* renderer, VkFormat format) {
     return VK_SUCCESS;
 }
 
-VkResult cuCreateFrames(CuRenderer* renderer, uint32_t nFrames) {
+VkResult cuCreateFrames(CuRenderer* const renderer, const uint32_t nFrames) {
     const VkDevice device = renderer->_context->_device;
     VkResult result = VK_SUCCESS;
 
@@ -420,7 +414,7 @@ VkResult cuCreateFrames(CuRenderer* renderer, uint32_t nFrames) {
     return VK_SUCCESS;
 }
 
-VkResult cuCreateTimelineSemaphore(CuRenderer* renderer) {
+VkResult cuCreateTimelineSemaphore(CuRenderer* const renderer) {
     const VkSemaphoreTypeCreateInfo semaphoreType = {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
         .pNext = NULL,

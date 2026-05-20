@@ -22,11 +22,11 @@
     })
 
 CuResult cuCreateDynBuf(
-    const CuRenderer* renderer,
-    uint64_t size,
-    void* allocator,
-    const CuAllocationCallbacks* allocationCallbacks,
-    CuDynBuf* buffer
+    const CuRenderer* const renderer,
+    const uint64_t size,
+    void* const allocator,
+    const CuAllocationCallbacks* const allocationCallbacks,
+    CuDynBuf* const buffer
 ) {
     const VkDevice device = renderer->_context->_device;
     CuResult result = CU_SUCCESS;
@@ -62,14 +62,14 @@ CuResult cuCreateDynBuf(
         VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,
         &buffer->_allocation
     );
-    if (result.tag != CU_TAG_SUCCESS) {
+    if (!CU_IS_SUCCESS(result)) {
         goto FAIL;
     }
 
     // Create the buffer.
     const VkResult createBufferResult = vkCreateBuffer(device, &createInfo, NULL, &buffer->_buffer);
     if (createBufferResult != VK_SUCCESS) {
-        result = CU_VK_RESULT(createBufferResult);
+        result = CU_VK_ERROR(createBufferResult);
         goto FAIL;
     }
 
@@ -78,7 +78,7 @@ CuResult cuCreateDynBuf(
         device, buffer->_buffer, buffer->_allocation._memory, buffer->_allocation._offset
     );
     if (bindBufferMemoryResult != VK_SUCCESS) {
-        result = CU_VK_RESULT(bindBufferMemoryResult);
+        result = CU_VK_ERROR(bindBufferMemoryResult);
         goto FAIL;
     }
 
@@ -101,7 +101,9 @@ FAIL:
 }
 
 void cuDestroyDynBuf(
-    CuDynBuf* buffer, void* allocator, const CuAllocationCallbacks* allocationCallbacks
+    CuDynBuf* const buffer,
+    void* const allocator,
+    const CuAllocationCallbacks* const allocationCallbacks
 ) {
     allocationCallbacks->freeCallback(allocator, &buffer->_allocation);
     vkDestroyBuffer(buffer->_renderer->_context->_device, buffer->_buffer, NULL);
@@ -109,7 +111,7 @@ void cuDestroyDynBuf(
     *buffer = CU_NULL_DYN_BUF;
 }
 
-CuResult cuDynBufWrite(CuDynBuf* buffer, const uint64_t size, const void* src) {
+CuResult cuDynBufWrite(CuDynBuf* const buffer, const uint64_t size, const void* const src) {
     const VkDevice device = buffer->_renderer->_context->_device;
 
     // Get the mapped memory.
@@ -124,7 +126,7 @@ CuResult cuDynBufWrite(CuDynBuf* buffer, const uint64_t size, const void* src) {
         (void**)&dst
     );
     if (mapMemoryResult != VK_SUCCESS) {
-        return CU_VK_RESULT(mapMemoryResult);
+        return CU_VK_ERROR(mapMemoryResult);
     }
 
     // Write the data.
@@ -136,7 +138,7 @@ CuResult cuDynBufWrite(CuDynBuf* buffer, const uint64_t size, const void* src) {
     return CU_SUCCESS;
 }
 
-CuResult cuDynBufWriteAll(CuDynBuf* buffer, uint64_t size, const void* src) {
+CuResult cuDynBufWriteAll(CuDynBuf* const buffer, const uint64_t size, const void* const src) {
     const VkDevice device = buffer->_renderer->_context->_device;
     const uint64_t nFrames = (uint64_t)buffer->_renderer->_nFrames;
 
@@ -153,7 +155,7 @@ CuResult cuDynBufWriteAll(CuDynBuf* buffer, uint64_t size, const void* src) {
         (void**)&dst
     );
     if (mapMemoryResult != VK_SUCCESS) {
-        return CU_VK_RESULT(mapMemoryResult);
+        return CU_VK_ERROR(mapMemoryResult);
     }
 
     // Write the data.

@@ -159,6 +159,6 @@ bool cuFindMemoryType(
  *
  * @param context The context to wait on.
  */
-static inline void cuContextWaitIdle(const CuContext* context) {
+static inline void cuContextWaitIdle(const CuContext* const context) {
     vkDeviceWaitIdle(context->_device);
 }

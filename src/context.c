@@ -232,10 +232,7 @@ CuResult cuCreateContext(CuContext* const context, const CuContextCreateInfo* co
 
 FAIL:
     cuDestroyContext(context);
-    return (CuResult){
-        .tag = CU_TAG_VK_ERROR,
-        .val = result,
-    };
+    return CU_VK_ERROR(result);
 }
 
 void cuDestroyContext(CuContext* const context) {

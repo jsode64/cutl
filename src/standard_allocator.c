@@ -1,16 +1,17 @@
 #include "allocation.h"
 #include "context.h"
 #include "result.h"
+#include "util.h"
 
 #include <stdbool.h>
 #include <vulkan/vulkan.h>
 
 CuResult cuStandardAllocatorAllocationCallback(
-    void* self,
-    const VkMemoryRequirements* requirements,
-    VkMemoryPropertyFlags properties,
-    VkMemoryAllocateFlags flags,
-    CuAllocation* allocation
+    void* const self,
+    const VkMemoryRequirements* const requirements,
+    const VkMemoryPropertyFlags properties,
+    const VkMemoryAllocateFlags flags,
+    CuAllocation* const allocation
 ) {
     const CuContext* context = (const CuContext*)self;
     VkResult result = VK_SUCCESS;
@@ -51,10 +52,7 @@ CuResult cuStandardAllocatorAllocationCallback(
 
 FAIL:
     *allocation = CU_NULL_ALLOCATION;
-    return (CuResult){
-        .tag = CU_TAG_VK_ERROR,
-        .val = result,
-    };
+    return CU_VK_ERROR(result);
 }
 
 /**
@@ -63,7 +61,7 @@ FAIL:
  * @param self A void pointer to the source allocator.
  * @param allocation The allocation to free.
  */
-void cuStandardAllocatorFreeCallback(void* self, CuAllocation* allocation) {
+void cuStandardAllocatorFreeCallback(void* const self, CuAllocation* const allocation) {
     const CuContext* context = (const CuContext*)self;
 
     vkFreeMemory(context->_device, allocation->_memory, NULL);

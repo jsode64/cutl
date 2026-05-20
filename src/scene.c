@@ -4,7 +4,7 @@
 
 #include <vulkan/vulkan.h>
 
-void cuSceneBeginRender(CuScene* scene, const CuRenderer* renderer) {
+void cuSceneBeginRender(CuScene* const scene, const CuRenderer* const renderer) {
     const CuSwapchainImage* swapchainImage = &renderer->_swapchainImages[renderer->_imageIndex];
 
     // Set viewport and scissor.
@@ -101,7 +101,7 @@ void cuSceneBeginRender(CuScene* scene, const CuRenderer* renderer) {
     vkCmdBeginRendering(scene->_commandBuffer, &renderingInfo);
 }
 
-void cuSceneEndRender(CuScene* scene, const CuRenderer* renderer) {
+void cuSceneEndRender(CuScene* const scene, const CuRenderer* const renderer) {
     vkCmdEndRendering(scene->_commandBuffer);
 
     // Convert the swapchain image to presentable.
@@ -140,16 +140,19 @@ void cuSceneEndRender(CuScene* scene, const CuRenderer* renderer) {
     vkCmdPipelineBarrier2(scene->_commandBuffer, &dependencyInfo);
 }
 
-void cuSceneBindPipeline(CuScene* scene, const CuPipeline* pipeline) {
+void cuSceneBindPipeline(CuScene* const scene, const CuPipeline* const pipeline) {
     vkCmdBindPipeline(scene->_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->_pipeline);
 }
 
-void cuSceneDraw(CuScene* scene, const uint32_t nVertices, const uint32_t nInstances) {
+void cuSceneDraw(CuScene* const scene, const uint32_t nVertices, const uint32_t nInstances) {
     vkCmdDraw(scene->_commandBuffer, nVertices, nInstances, 0, 0);
 }
 
 void cuSceneSetPushConstants(
-    CuScene* scene, const CuPipelineLayout* pipelineLayout, const uint32_t size, const void* data
+    CuScene* const scene,
+    const CuPipelineLayout* const pipelineLayout,
+    const uint32_t size,
+    const void* const data
 ) {
     vkCmdPushConstants(
         scene->_commandBuffer,

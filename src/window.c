@@ -1,6 +1,7 @@
 #include "window.h"
 
 #include "result.h"
+#include "util.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -14,7 +15,9 @@
         ._height = 0,                                                                              \
     })
 
-CuResult cuCreateWindow(CuWindow* window, const char* title, uint32_t width, uint32_t height) {
+CuResult cuCreateWindow(
+    CuWindow* const window, const char* const title, const uint32_t width, const uint32_t height
+) {
     *window = CU_NULL_WINDOW;
 
     // Initialize GLFW.
@@ -35,10 +38,7 @@ CuResult cuCreateWindow(CuWindow* window, const char* title, uint32_t width, uin
 
 FAIL:
     cuDestroyWindow(window);
-    return (CuResult){
-        .tag = CU_TAG_GLFW_ERROR,
-        .val = glfwGetError(NULL),
-    };
+    return CU_GLFW_ERROR;
 }
 
 void cuDestroyWindow(CuWindow* window) {
@@ -47,7 +47,7 @@ void cuDestroyWindow(CuWindow* window) {
     *window = CU_NULL_WINDOW;
 }
 
-void cuUpdateWindow(CuWindow* window) {
+void cuUpdateWindow(CuWindow* const window) {
     glfwPollEvents();
 
     int width = 0, height = 0;

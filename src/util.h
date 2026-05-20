@@ -2,6 +2,8 @@
 
 #include "result.h"
 
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -30,17 +32,28 @@
 #define CLAMP(v, min, max) MAX(min, MIN(v, max))
 
 /**
- * Wraps the `VkResult` into a `CuResult`.
+ * @param _val The Cutl error value.
  *
- * @param result The `VkResult` to wrap.
- *
- * @return The `VkResult` as a fitting `CuResult`.
+ * @return A `CU_RESULT` for the Cutl error.
  */
-#define CU_VK_RESULT(result)                                                                       \
-    ((CuResult){                                                                                   \
-        .tag = CU_TAG_VK_ERROR,                                                                    \
-        .val = (int32_t)result,                                                                    \
-    })
+#define CU_ERROR(_val) ((CuResult){.tag = CU_TAG_CU_ERROR, .val = (_val)})
+
+/**
+ * @return A `CU_RESULT` for a `libc` operation failure using `errno`.
+ */
+#define CU_STD_ERROR ((CuResult){.tag = CU_TAG_STD_ERROR, .val = errno})
+
+/**
+ * @param _val The Vulkan error value.
+ *
+ * @return A `CU_RESULT` for the Vulkan error.
+ */
+#define CU_VK_ERROR(_val) ((CuResult){.tag = CU_TAG_VK_ERROR, .val = (_val)})
+
+/**
+ * @return A `CU_RESULT` for a GLFW operation failure using `glfwGetError`.
+ */
+#define CU_GLFW_ERROR ((CuResult){.tag = CU_TAG_GLFW_ERROR, .val = glfwGetError(NULL)})
 
 #if defined(__APPLE__)
 #define CU_TARGET_OS (CU_OS_APPLE)

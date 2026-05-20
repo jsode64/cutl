@@ -2,6 +2,7 @@
 
 #include "context.h"
 #include "result.h"
+#include "util.h"
 
 #include <errno.h>
 #include <stdbool.h>
@@ -39,9 +40,9 @@
     })
 
 CuResult cuCreatePipelineLayout(
-    CuPipelineLayout* pipelineLayout,
-    const CuContext* context,
-    const CuPipelineLayoutCreateInfo* info
+    CuPipelineLayout* const pipelineLayout,
+    const CuContext* const context,
+    const CuPipelineLayoutCreateInfo* const info
 ) {
     *pipelineLayout = CU_NULL_PIPELINE_LAYOUT;
     pipelineLayout->_context = context;
@@ -67,16 +68,13 @@ CuResult cuCreatePipelineLayout(
     );
     if (result != VK_SUCCESS) {
         *pipelineLayout = CU_NULL_PIPELINE_LAYOUT;
-        return (CuResult){
-            .tag = CU_TAG_VK_ERROR,
-            .val = result,
-        };
+        CU_VK_ERROR(result);
     }
 
     return CU_SUCCESS;
 }
 
-void cuDestroyPipelineLayout(CuPipelineLayout* pipelineLayout) {
+void cuDestroyPipelineLayout(CuPipelineLayout* const pipelineLayout) {
     vkDestroyPipelineLayout(
         pipelineLayout->_context->_device, pipelineLayout->_pipelineLayout, NULL
     );
@@ -84,7 +82,7 @@ void cuDestroyPipelineLayout(CuPipelineLayout* pipelineLayout) {
     *pipelineLayout = CU_NULL_PIPELINE_LAYOUT;
 }
 
-CuResult cuReadShaderCode(CuShaderCode* shaderCode, const char* path) {
+CuResult cuReadShaderCode(CuShaderCode* const shaderCode, const char* const path) {
     *shaderCode = CU_NULL_SHADER_CODE;
 
     FILE* file = fopen(path, "r");
@@ -123,25 +121,22 @@ CuResult cuReadShaderCode(CuShaderCode* shaderCode, const char* path) {
 FAIL:
     fclose(file);
     cuDestroyShaderCode(shaderCode);
-    return (CuResult){
-        .tag = CU_TAG_STD_ERROR,
-        .val = (int32_t)errno,
-    };
+    return CU_STD_ERROR;
 }
 
-void cuDestroyShaderCode(CuShaderCode* shaderCode) {
+void cuDestroyShaderCode(CuShaderCode* const shaderCode) {
     free(shaderCode->_code);
 
     *shaderCode = CU_NULL_SHADER_CODE;
 }
 
 CuResult cuCreatePipeline(
-    CuPipeline* pipeline,
-    const CuContext* context,
-    const CuPipelineLayout* pipelineLayout,
-    const CuShaderCode* vertexCode,
-    const CuShaderCode* fragmentCode,
-    const CuPipelineCreateInfo* info
+    CuPipeline* const pipeline,
+    const CuContext* const context,
+    const CuPipelineLayout* const pipelineLayout,
+    const CuShaderCode* const vertexCode,
+    const CuShaderCode* const fragmentCode,
+    const CuPipelineCreateInfo* const info
 ) {
     *pipeline = CU_NULL_PIPELINE;
     pipeline->_context = context;
@@ -334,16 +329,13 @@ CuResult cuCreatePipeline(
     );
     if (result != VK_SUCCESS) {
         *pipeline = CU_NULL_PIPELINE;
-        return (CuResult){
-            .tag = CU_TAG_VK_ERROR,
-            .val = result,
-        };
+        return CU_VK_ERROR(result);
     }
 
     return CU_SUCCESS;
 }
 
-void cuDestroyPipeline(CuPipeline* pipeline) {
+void cuDestroyPipeline(CuPipeline* const pipeline) {
     vkDestroyPipeline(pipeline->_context->_device, pipeline->_pipeline, NULL);
 
     *pipeline = CU_NULL_PIPELINE;

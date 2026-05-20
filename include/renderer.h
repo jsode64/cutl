@@ -108,7 +108,7 @@ CuResult cuRendererSubmitScene(CuRenderer* renderer, CuScene* scene);
  *
  * @return The format of the renderer's swapchain images.
  */
-static inline VkFormat cuRendererFormat(const CuRenderer* renderer) {
+static inline VkFormat cuRendererFormat(const CuRenderer* const renderer) {
     return renderer->_swapchainFormat;
 }
 
@@ -117,6 +117,6 @@ static inline VkFormat cuRendererFormat(const CuRenderer* renderer) {
  *
  * @return The index of the renderer's current target frame.
  */
-static inline uint64_t cuRendererFrameIndex(const CuRenderer* renderer) {
+static inline uint64_t cuRendererFrameIndex(const CuRenderer* const renderer) {
     return (renderer->_frameCounter % renderer->_nFrames);
 }
